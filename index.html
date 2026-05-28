@@ -70,7 +70,7 @@
         }
 
         /* 2. Efek Pulse Glow untuk Tombol */
-        .btn-glow {
+        .neon-border:hover, .btn-glow {
             box-shadow: 0 0 15px rgba(254, 9, 121, 0.5);
             animation: pulse-glow 2s infinite;
         }
@@ -80,7 +80,7 @@
             100% { box-shadow: 0 0 15px rgba(254, 9, 121, 0.5); }
         }
 
-        /* 3. Efek Slide-in Item Pesanan */
+        /* 3. Efek Slide-in */
         @keyframes slideIn {
             from { opacity: 0; transform: translateX(50px); }
             to { opacity: 1; transform: translateX(0); }
@@ -107,7 +107,7 @@
 </head>
 <body class="min-h-screen p-4 md:p-8 flex flex-col items-center">
 
-    <!-- Toast Notification Container -->
+    <!-- Toast Container -->
     <div id="toast-container"></div>
 
     <!-- Header & Stats -->
@@ -122,7 +122,7 @@
 
         <div class="grid grid-cols-2 gap-4 mt-8">
             <div class="glass p-5 rounded-2xl border-l-4 border-tt-cyan text-center transition hover:scale-[1.02]">
-                <p class="text-sm text-gray-400 mb-1">Total Pesanan Hari Ini</p>
+                <p class="text-sm text-gray-400 mb-1">Total Pesanan</p>
                 <p class="text-3xl font-bold text-white" id="statTotal">0</p>
             </div>
             <div class="glass p-5 rounded-2xl border-l-4 border-tt-pink text-center transition hover:scale-[1.02]">
@@ -144,28 +144,43 @@
                 
                 <form id="orderForm" class="space-y-4">
                     <div>
-                        <label class="block text-xs text-gray-400 mb-1 ml-1">Kode / Nomor Pesanan</label>
-                        <input type="text" id="orderId" placeholder="(Opsional)" autocomplete="off"
-                            class="w-full bg-[#1a1a1a] border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-tt-cyan transition-colors">
+                        <!-- BUG TERPENTING DIPERBAIKI: Tidak ada required disini agar bisa opsional -->
+                        <input type="text" id="orderId" placeholder="Kode / Nomor Pesanan" autocomplete="off"
+                            class="w-full bg-[#1a1a1a] border border-gray-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-white transition-colors">
                     </div>
                     <div>
-                        <label class="block text-xs text-gray-400 mb-1 ml-1">Nama Pembeli</label>
-                        <input type="text" id="customer" required autocomplete="off"
-                            class="w-full bg-[#1a1a1a] border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-tt-cyan transition-colors">
+                        <input type="text" id="customer" required placeholder="Nama Pembeli" autocomplete="off"
+                            class="w-full bg-[#1a1a1a] border border-gray-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-tt-cyan transition-colors">
                     </div>
                     <div>
-                        <label class="block text-xs text-gray-400 mb-1 ml-1">Nama Produk</label>
-                        <input type="text" id="product" required autocomplete="off"
-                            class="w-full bg-[#1a1a1a] border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-tt-pink transition-colors">
+                        <input type="text" id="product" required placeholder="Nama Produk" autocomplete="off"
+                            class="w-full bg-[#1a1a1a] border border-gray-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-tt-pink transition-colors">
                     </div>
                     <div>
-                        <label class="block text-xs text-gray-400 mb-1 ml-1">Harga (Rp)</label>
-                        <input type="number" id="price" required autocomplete="off"
-                            class="w-full bg-[#1a1a1a] border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-tt-cyan transition-colors">
+                        <input type="number" id="price" required placeholder="Harga (Rp)" autocomplete="off"
+                            class="w-full bg-[#1a1a1a] border border-gray-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-tt-cyan transition-colors">
                     </div>
 
-                    <button type="submit" class="btn-glow w-full mt-4 py-3 bg-gradient-to-r from-tt-cyan to-tt-pink text-white font-bold rounded-xl transition-all flex items-center justify-center hover:opacity-90">
-                        <i class="fas fa-paper-plane mr-2"></i> Simpan Pesanan
+                    <!-- Area Foto (Fitur Paste) -->
+                    <div>
+                        <div id="photoArea" class="w-full bg-[#1a1a1a] border-2 border-dashed border-gray-600 rounded-xl p-4 text-center cursor-pointer hover:border-tt-pink transition-colors relative overflow-hidden group min-h-[100px] flex flex-col items-center justify-center" onclick="document.getElementById('fileInput').click()">
+                            
+                            <div id="photoHint">
+                                <i class="fas fa-image text-2xl text-gray-500 mb-2"></i>
+                                <p class="text-xs text-gray-400">Klik pilih foto atau<br><strong class="text-white">Paste (Ctrl+V)</strong></p>
+                            </div>
+
+                            <img id="photoPreview" class="absolute inset-0 w-full h-full object-cover hidden" alt="Preview">
+                            
+                            <button type="button" id="removePhoto" class="absolute top-2 right-2 bg-red-500 text-white w-7 h-7 rounded-full hidden flex items-center justify-center hover:bg-red-600 z-10" onclick="event.stopPropagation(); resetPhoto()">
+                                <i class="fas fa-times text-xs"></i>
+                            </button>
+                        </div>
+                        <input type="file" id="fileInput" class="hidden" accept="image/*">
+                    </div>
+
+                    <button type="submit" id="submitBtn" class="btn-glow w-full py-3 bg-gradient-to-r from-tt-cyan to-tt-pink text-white font-bold rounded-xl transition-all flex items-center justify-center hover:opacity-90">
+                        <i class="fas fa-check mr-2"></i> Simpan
                     </button>
                 </form>
             </div>
@@ -176,43 +191,211 @@
             <div class="glass rounded-2xl p-6 min-h-[500px] flex flex-col">
                 <div class="flex justify-between items-center mb-6 border-b border-gray-700 pb-2">
                     <h2 class="text-xl font-semibold">
-                        <i class="fas fa-list-ul text-tt-pink mr-2"></i> Riwayat Masuk
+                        <i class="fas fa-history text-tt-pink mr-2"></i> Riwayat Masuk
                     </h2>
+                    <span id="loadingText" class="text-xs text-tt-cyan animate-pulse">Menghubungkan Database...</span>
                 </div>
                 
                 <div id="orderList" class="flex-1 overflow-y-auto space-y-4 pr-2">
-                    <!-- Data pesanan akan di-render di sini -->
+                    <!-- Data masuk kesini -->
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- JavaScript Logic (Murni Lokal) -->
-    <script>
-        // Ambil data dari Local Storage browser, jika kosong maka buat array baru
-        let orders = JSON.parse(localStorage.getItem('tiktokOrders')) || [];
-        
-        const form = document.getElementById('orderForm');
-        const list = document.getElementById('orderList');
-        const statTotal = document.getElementById('statTotal');
-        const statOmzet = document.getElementById('statOmzet');
+    <!-- Firebase Scripts Menggunakan Config Anda -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Fungsi Format Uang
-        const formatRupiah = (number) => {
-            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(number);
+        // Konfigurasi dari Anda yang baru (TimTiktok)
+        const firebaseConfig = {
+            apiKey: "AIzaSyAqtIAECyYbixNLRYCA4PweI7ywTN7XGwg",
+            authDomain: "timtiktok-5c94f.firebaseapp.com",
+            projectId: "timtiktok-5c94f",
+            storageBucket: "timtiktok-5c94f.firebasestorage.app",
+            messagingSenderId: "700402084311",
+            appId: "1:700402084311:web:1183a00358501ac8918392",
+            measurementId: "G-FEBFDP0F1L"
         };
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        // Kita simpan di folder 'artifacts' agar sesuai standar aplikasi
+        const appId = "tiktok_recap_app"; 
+        let userId = null;
+        let orders = [];
 
-        // Render Antarmuka
+        // State Foto
+        window.currentImageData = null;
+
+        // Login Anonim Otomatis
+        async function initAuth() {
+            try {
+                await signInAnonymously(auth);
+            } catch (error) {
+                console.error("Gagal login:", error);
+                document.getElementById('loadingText').innerText = "Autentikasi Anonim Gagal (Cek Firebase Console)";
+                document.getElementById('loadingText').classList.replace('text-tt-cyan', 'text-red-500');
+            }
+        }
+        initAuth();
+
+        // Listener jika sudah berhasil Login
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                userId = user.uid;
+                fetchData();
+            }
+        });
+
+        function fetchData() {
+            if (!userId) return;
+            // Target lokasi database
+            const ref = collection(db, 'artifacts', appId, 'users', userId, 'orders');
+            
+            onSnapshot(ref, (snapshot) => {
+                orders = [];
+                snapshot.forEach(doc => orders.push({ id: doc.id, ...doc.data() }));
+                
+                // Urutkan terbaru
+                orders.sort((a, b) => b.timestamp - a.timestamp);
+                
+                document.getElementById('loadingText').classList.add('hidden');
+                renderUI();
+            }, (error) => {
+                console.error("Gagal narik data:", error);
+                document.getElementById('loadingText').innerText = "Gagal memuat Firestore. Cek Rules.";
+                document.getElementById('loadingText').classList.replace('text-tt-cyan', 'text-red-500');
+            });
+        }
+
+        // Fitur Toast
+        function showToast(message, type) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const borderColor = type === 'success' ? 'border-tt-cyan' : 'border-tt-pink';
+            const icon = type === 'success' ? '<i class="fas fa-check-circle text-tt-cyan text-lg"></i>' : '<i class="fas fa-info-circle text-tt-pink text-lg"></i>';
+            
+            toast.className = `toast border-l-4 ${borderColor}`;
+            toast.innerHTML = `<div class="flex items-center gap-3">${icon}<span class="text-sm font-medium text-gray-100">${message}</span></div>`;
+            
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('hide');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Logic Fitur Paste/Upload Foto
+        document.addEventListener('paste', (e) => {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    compressAndShowImage(items[i].getAsFile());
+                }
+            }
+        });
+
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) compressAndShowImage(e.target.files[0]);
+        });
+
+        function compressAndShowImage(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 300; 
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    window.currentImageData = canvas.toDataURL('image/jpeg', 0.6); 
+                    
+                    document.getElementById('photoPreview').src = window.currentImageData;
+                    document.getElementById('photoPreview').classList.remove('hidden');
+                    document.getElementById('removePhoto').classList.remove('hidden');
+                    document.getElementById('photoHint').classList.add('hidden');
+                }
+                img.src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+
+        window.resetPhoto = function() {
+            window.currentImageData = null;
+            document.getElementById('photoPreview').src = "";
+            document.getElementById('photoPreview').classList.add('hidden');
+            document.getElementById('removePhoto').classList.add('hidden');
+            document.getElementById('photoHint').classList.remove('hidden');
+            document.getElementById('fileInput').value = "";
+        }
+
+        // Simpan Data
+        document.getElementById('orderForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(!userId) return showToast("Sistem belum terhubung ke database.", 'error');
+
+            const btn = document.getElementById('submitBtn');
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Menyimpan...`;
+            btn.disabled = true;
+
+            const newOrder = {
+                orderId: document.getElementById('orderId').value || '',
+                customer: document.getElementById('customer').value,
+                product: document.getElementById('product').value,
+                price: parseInt(document.getElementById('price').value),
+                photo: window.currentImageData,
+                timestamp: Date.now()
+            };
+
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'orders'), newOrder);
+                e.target.reset();
+                resetPhoto();
+                document.getElementById('orderId').focus(); 
+                showToast('Asik! 1 Closingan Berhasil Dicatat 🔥', 'success');
+            } catch (err) {
+                console.error(err);
+                showToast("Gagal menyimpan. Pastikan rules Firebase disetup.", 'error');
+            } finally {
+                btn.innerHTML = `<i class="fas fa-check mr-2"></i> Simpan`;
+                btn.disabled = false;
+            }
+        });
+
+        // Hapus Data
+        window.deleteOrder = async function(id) {
+            if(!userId) return;
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'orders', id));
+                showToast('Pesanan dihapus.', 'error');
+            } catch(e) {
+                console.error("Gagal hapus", e);
+            }
+        }
+
         function renderUI() {
-            // Update Statistik
-            statTotal.innerText = orders.length;
+            document.getElementById('statTotal').innerText = orders.length;
             const totalOmzet = orders.reduce((sum, item) => sum + item.price, 0);
-            statOmzet.innerText = formatRupiah(totalOmzet);
+            document.getElementById('statOmzet').innerText = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(totalOmzet);
 
-            // Update Daftar
-            list.innerHTML = '';
+            const listEl = document.getElementById('orderList');
             if(orders.length === 0) {
-                list.innerHTML = `
+                listEl.innerHTML = `
                     <div class="h-full flex flex-col items-center justify-center text-gray-500 mt-20">
                         <i class="fas fa-ghost text-5xl mb-4 opacity-50 animate-bounce"></i>
                         <p>Belum ada orderan masuk</p>
@@ -220,98 +403,35 @@
                 return;
             }
 
-            orders.forEach((order) => {
-                const item = document.createElement('div');
-                // Tambahkan class animasi 'animate-slide-in'
-                item.className = 'animate-slide-in bg-[#1a1a1a] rounded-xl p-4 flex items-center justify-between border-l-4 border-tt-cyan hover:border-tt-pink transition-all transform hover:-translate-y-1';
+            listEl.innerHTML = orders.map(order => {
+                const timeStr = new Date(order.timestamp).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+                const priceStr = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(order.price);
                 
-                item.innerHTML = `
-                    <div class="flex-1">
-                        <p class="font-bold text-white text-lg">${order.customer}</p>
-                        <p class="text-[11px] text-tt-cyan font-mono mt-0.5"><i class="fas fa-hashtag text-[10px]"></i> ${order.orderId || 'Tanpa Kode'}</p>
-                        <p class="text-sm text-gray-300 mt-1"><i class="fas fa-box text-xs mr-1"></i> ${order.product}</p>
-                        <p class="text-xs text-gray-500 mt-1.5"><i class="far fa-clock"></i> ${order.time}</p>
+                const photoHTML = order.photo 
+                    ? `<img src="${order.photo}" class="w-14 h-14 rounded-lg object-cover border border-gray-600 shrink-0">` 
+                    : `<div class="w-14 h-14 rounded-lg bg-gray-800 border border-gray-600 flex items-center justify-center shrink-0"><i class="fas fa-image text-gray-600"></i></div>`;
+
+                return `
+                <div class="animate-slide-in bg-[#1a1a1a] rounded-xl p-3 flex items-center justify-between border-l-4 border-tt-cyan group hover:border-tt-pink transition-all transform hover:-translate-y-1">
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        ${photoHTML}
+                        <div class="min-w-0">
+                            <p class="font-bold text-white truncate text-base md:text-lg">${order.customer}</p>
+                            <p class="text-[11px] text-tt-cyan font-mono truncate mb-0.5"><i class="fas fa-hashtag text-[10px]"></i> ${order.orderId || 'Tanpa Kode'}</p>
+                            <p class="text-xs md:text-sm text-gray-300 truncate"><i class="fas fa-box text-[10px] mr-1"></i> ${order.product}</p>
+                            <p class="text-[10px] text-gray-500 mt-0.5"><i class="far fa-clock"></i> ${timeStr}</p>
+                        </div>
                     </div>
-                    <div class="text-right ml-4">
-                        <p class="font-bold text-white text-lg tracking-wide">${formatRupiah(order.price)}</p>
-                        <button onclick="deleteOrder(${order.id})" class="text-xs text-gray-500 mt-2 hover:text-tt-pink transition-colors">
+                    <div class="flex flex-col items-end shrink-0 ml-4">
+                        <span class="font-bold text-white text-base md:text-lg tracking-wide">${priceStr}</span>
+                        <button onclick="deleteOrder('${order.id}')" class="text-xs text-gray-500 mt-2 opacity-0 group-hover:opacity-100 transition-all hover:text-tt-pink">
                             <i class="fas fa-trash"></i> Hapus
                         </button>
                     </div>
-                `;
-                list.appendChild(item);
-            });
-        }
-
-        // Tambah Pesanan
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            
-            const orderId = document.getElementById('orderId').value;
-            const customer = document.getElementById('customer').value;
-            const product = document.getElementById('product').value;
-            const price = parseInt(document.getElementById('price').value);
-
-            const newOrder = {
-                id: Date.now(),
-                orderId: orderId,
-                customer,
-                product,
-                price,
-                time: new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})
-            };
-
-            // Masukkan ke urutan paling atas array
-            orders.unshift(newOrder);
-            
-            // SIMPAN KE LOCAL STORAGE
-            localStorage.setItem('tiktokOrders', JSON.stringify(orders));
-            
-            form.reset();
-            document.getElementById('orderId').focus(); // Otomatis fokus ke input atas lagi
-            
-            renderUI();
-            showToast('Asik! 1 Closingan Berhasil Dicatat 🔥', 'success');
-        });
-
-        // Hapus Pesanan
-        window.deleteOrder = function(id) {
-            orders = orders.filter(order => order.id !== id);
-            
-            // UPDATE LOCAL STORAGE SETELAH MENGHAPUS
-            localStorage.setItem('tiktokOrders', JSON.stringify(orders));
-            
-            renderUI();
-            showToast('Pesanan dihapus.', 'error');
-        }
-
-        // Fungsi Toast Notification (Muncul dari kanan bawah)
-        function showToast(message, type) {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            
-            const borderColor = type === 'success' ? 'border-tt-cyan' : 'border-tt-pink';
-            const icon = type === 'success' ? '<i class="fas fa-check-circle text-tt-cyan text-lg"></i>' : '<i class="fas fa-trash text-tt-pink text-lg"></i>';
-            
-            toast.className = `toast border-l-4 ${borderColor}`;
-            toast.innerHTML = `
-                <div class="flex items-center gap-3">
-                    ${icon}
-                    <span class="text-sm font-medium text-gray-100">${message}</span>
                 </div>
-            `;
-            
-            container.appendChild(toast);
-            
-            // Hilangkan toast setelah 3 detik
-            setTimeout(() => {
-                toast.classList.add('hide');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+                `;
+            }).join('');
         }
-
-        // Render awal
-        renderUI();
     </script>
 </body>
 </html>
