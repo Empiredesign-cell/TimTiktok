@@ -254,8 +254,8 @@
 
         function fetchData() {
             if (!userId) return;
-            // Target lokasi database
-            const ref = collection(db, 'artifacts', appId, 'users', userId, 'orders');
+            // Target lokasi database diubah ke 'public' agar bisa diakses beda device
+            const ref = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
             
             onSnapshot(ref, (snapshot) => {
                 orders = [];
@@ -363,7 +363,8 @@
             };
 
             try {
-                await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'orders'), newOrder);
+                // Simpan ke path public
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), newOrder);
                 e.target.reset();
                 resetPhoto();
                 document.getElementById('orderId').focus(); 
@@ -381,7 +382,8 @@
         window.deleteOrder = async function(id) {
             if(!userId) return;
             try {
-                await deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'orders', id));
+                // Hapus dari path public
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'orders', id));
                 showToast('Pesanan dihapus.', 'error');
             } catch(e) {
                 console.error("Gagal hapus", e);
