@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TikTok Order Recap</title>
-      <link rel="icon" type="image/x-icon" href="tim.png">
+    <link rel="icon" type="image/x-icon" href="tim.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
@@ -103,6 +103,9 @@
         }
         .toast.hide { animation: fadeOut 0.3s ease-in forwards; }
         @keyframes fadeOut { to { opacity: 0; transform: translateX(50px); } }
+        
+        /* Ubah warna icon kalender di input date agar putih */
+        ::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-8 flex flex-col items-center">
@@ -144,26 +147,29 @@
                 
                 <form id="orderForm" class="space-y-4">
                     <div>
-                        <!-- BUG TERPENTING DIPERBAIKI: Tidak ada required disini agar bisa opsional -->
-                        <input type="text" id="orderId" placeholder="Kode / Nomor Pesanan" autocomplete="off"
-                            class="w-full bg-[#1a1a1a] border border-gray-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-white transition-colors">
+                        <input type="date" id="orderDate" required title="Tanggal Order"
+                            class="w-full bg-[#1a1a1a] border border-gray-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-white transition-colors text-white">
+                    </div>
+                    <div>
+                        <input type="text" id="orderId" placeholder="Kode / Nomor Pesanan (Opsional)" autocomplete="off"
+                            class="w-full bg-[#1a1a1a] border border-gray-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-tt-cyan transition-colors">
                     </div>
                     <div>
                         <input type="text" id="customer" required placeholder="Nama Pembeli" autocomplete="off"
-                            class="w-full bg-[#1a1a1a] border border-gray-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-tt-cyan transition-colors">
-                    </div>
-                    <div>
-                        <input type="text" id="product" required placeholder="Nama Produk" autocomplete="off"
                             class="w-full bg-[#1a1a1a] border border-gray-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-tt-pink transition-colors">
                     </div>
                     <div>
-                        <input type="number" id="price" required placeholder="Harga (Rp)" autocomplete="off"
+                        <input type="text" id="product" required placeholder="Nama Produk" autocomplete="off"
                             class="w-full bg-[#1a1a1a] border border-gray-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-tt-cyan transition-colors">
+                    </div>
+                    <div>
+                        <input type="number" id="price" required placeholder="Harga (Rp)" autocomplete="off"
+                            class="w-full bg-[#1a1a1a] border border-gray-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-tt-pink transition-colors">
                     </div>
 
                     <!-- Area Foto (Fitur Paste) -->
                     <div>
-                        <div id="photoArea" class="w-full bg-[#1a1a1a] border-2 border-dashed border-gray-600 rounded-xl p-4 text-center cursor-pointer hover:border-tt-pink transition-colors relative overflow-hidden group min-h-[100px] flex flex-col items-center justify-center" onclick="document.getElementById('fileInput').click()">
+                        <div id="photoArea" class="w-full bg-[#1a1a1a] border-2 border-dashed border-gray-600 rounded-xl p-4 text-center cursor-pointer hover:border-tt-cyan transition-colors relative overflow-hidden group min-h-[100px] flex flex-col items-center justify-center" onclick="document.getElementById('fileInput').click()">
                             
                             <div id="photoHint">
                                 <i class="fas fa-image text-2xl text-gray-500 mb-2"></i>
@@ -203,13 +209,13 @@
         </div>
     </div>
 
-    <!-- Firebase Scripts Menggunakan Config Anda -->
+    <!-- Firebase Scripts Menggunakan Config TimTiktok -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Konfigurasi dari Anda yang baru (TimTiktok)
+        // Config TimTiktok
         const firebaseConfig = {
             apiKey: "AIzaSyAqtIAECyYbixNLRYCA4PweI7ywTN7XGwg",
             authDomain: "timtiktok-5c94f.firebaseapp.com",
@@ -224,7 +230,6 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         
-        // Kita simpan di folder 'artifacts' agar sesuai standar aplikasi
         const appId = "tiktok_recap_app"; 
         let userId = null;
         let orders = [];
@@ -232,19 +237,22 @@
         // State Foto
         window.currentImageData = null;
 
+        // Set default input date ke hari ini
+        document.getElementById('orderDate').valueAsDate = new Date();
+
         // Login Anonim Otomatis
         async function initAuth() {
             try {
                 await signInAnonymously(auth);
             } catch (error) {
                 console.error("Gagal login:", error);
-                document.getElementById('loadingText').innerText = "Autentikasi Anonim Gagal (Cek Firebase Console)";
+                document.getElementById('loadingText').innerText = "Autentikasi Anonim Gagal";
                 document.getElementById('loadingText').classList.replace('text-tt-cyan', 'text-red-500');
             }
         }
         initAuth();
 
-        // Listener jika sudah berhasil Login
+        // Listener Auth
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 userId = user.uid;
@@ -254,21 +262,21 @@
 
         function fetchData() {
             if (!userId) return;
-            // Target lokasi database diubah ke 'public' agar bisa diakses beda device
+            // Target lokasi database PUBLIC agar bisa dibuka antar device
             const ref = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
             
             onSnapshot(ref, (snapshot) => {
                 orders = [];
                 snapshot.forEach(doc => orders.push({ id: doc.id, ...doc.data() }));
                 
-                // Urutkan terbaru
+                // Urutkan berdasarkan waktu input terbaru
                 orders.sort((a, b) => b.timestamp - a.timestamp);
                 
                 document.getElementById('loadingText').classList.add('hidden');
                 renderUI();
             }, (error) => {
                 console.error("Gagal narik data:", error);
-                document.getElementById('loadingText').innerText = "Gagal memuat Firestore. Cek Rules.";
+                document.getElementById('loadingText').innerText = "Gagal memuat Firestore.";
                 document.getElementById('loadingText').classList.replace('text-tt-cyan', 'text-red-500');
             });
         }
@@ -354,6 +362,7 @@
             btn.disabled = true;
 
             const newOrder = {
+                orderDate: document.getElementById('orderDate').value,
                 orderId: document.getElementById('orderId').value || '',
                 customer: document.getElementById('customer').value,
                 product: document.getElementById('product').value,
@@ -363,11 +372,14 @@
             };
 
             try {
-                // Simpan ke path public
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), newOrder);
+                
+                // Reset form tapi pertahankan tanggal hari ini
                 e.target.reset();
+                document.getElementById('orderDate').valueAsDate = new Date(); 
                 resetPhoto();
                 document.getElementById('orderId').focus(); 
+                
                 showToast('Asik! 1 Closingan Berhasil Dicatat 🔥', 'success');
             } catch (err) {
                 console.error(err);
@@ -382,7 +394,6 @@
         window.deleteOrder = async function(id) {
             if(!userId) return;
             try {
-                // Hapus dari path public
                 await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'orders', id));
                 showToast('Pesanan dihapus.', 'error');
             } catch(e) {
@@ -406,7 +417,13 @@
             }
 
             listEl.innerHTML = orders.map(order => {
+                // Format Waktu Masuk
                 const timeStr = new Date(order.timestamp).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+                
+                // Format Tanggal Order (Dari input kalender)
+                const dateObj = new Date(order.orderDate);
+                const dateStr = !isNaN(dateObj) ? dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Tanpa Tanggal';
+
                 const priceStr = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(order.price);
                 
                 const photoHTML = order.photo 
@@ -421,7 +438,10 @@
                             <p class="font-bold text-white truncate text-base md:text-lg">${order.customer}</p>
                             <p class="text-[11px] text-tt-cyan font-mono truncate mb-0.5"><i class="fas fa-hashtag text-[10px]"></i> ${order.orderId || 'Tanpa Kode'}</p>
                             <p class="text-xs md:text-sm text-gray-300 truncate"><i class="fas fa-box text-[10px] mr-1"></i> ${order.product}</p>
-                            <p class="text-[10px] text-gray-500 mt-0.5"><i class="far fa-clock"></i> ${timeStr}</p>
+                            <p class="text-[10px] text-gray-500 mt-0.5">
+                                <i class="far fa-calendar-alt text-[9px] mr-0.5"></i> ${dateStr} &nbsp; 
+                                <i class="far fa-clock text-[9px] mr-0.5"></i> ${timeStr}
+                            </p>
                         </div>
                     </div>
                     <div class="flex flex-col items-end shrink-0 ml-4">
