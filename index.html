@@ -141,8 +141,8 @@
         <!-- Form Input -->
         <div class="md:col-span-1">
             <div class="glass rounded-2xl p-6 sticky top-4">
-                <h2 class="text-xl font-semibold mb-6 border-b border-gray-700 pb-2">
-                    <i class="fas fa-edit text-tt-cyan mr-2"></i> Input Pesanan
+                <h2 class="text-xl font-semibold mb-6 border-b border-gray-700 pb-2 flex items-center justify-between">
+                    <span><i class="fas fa-edit text-tt-cyan mr-2" id="formIcon"></i> <span id="formTitle">Input Pesanan</span></span>
                 </h2>
                 
                 <form id="orderForm" class="space-y-4">
@@ -185,9 +185,14 @@
                         <input type="file" id="fileInput" class="hidden" accept="image/*">
                     </div>
 
-                    <button type="submit" id="submitBtn" class="btn-glow w-full py-3 bg-gradient-to-r from-tt-cyan to-tt-pink text-white font-bold rounded-xl transition-all flex items-center justify-center hover:opacity-90">
-                        <i class="fas fa-check mr-2"></i> Simpan
-                    </button>
+                    <div class="flex gap-2">
+                        <button type="submit" id="submitBtn" class="btn-glow flex-1 py-3 bg-gradient-to-r from-tt-cyan to-tt-pink text-white font-bold rounded-xl transition-all flex items-center justify-center hover:opacity-90">
+                            <i class="fas fa-check mr-2" id="submitIcon"></i> <span id="submitText">Simpan</span>
+                        </button>
+                        <button type="button" id="cancelEditBtn" onclick="cancelEdit()" class="hidden py-3 px-4 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-xl transition-all">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -213,7 +218,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // Tambahan updateDoc diimport dari firestore
+        import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Config TimTiktok
         const firebaseConfig = {
@@ -234,7 +240,9 @@
         let userId = null;
         let orders = [];
 
-        // State Foto
+        // State Edit & Foto
+        let editMode = false;
+        let currentEditId = null;
         window.currentImageData = null;
 
         // Set default input date ke hari ini
@@ -262,7 +270,6 @@
 
         function fetchData() {
             if (!userId) return;
-            // Target lokasi database PUBLIC agar bisa dibuka antar device
             const ref = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
             
             onSnapshot(ref, (snapshot) => {
@@ -352,40 +359,109 @@
             document.getElementById('fileInput').value = "";
         }
 
-        // Simpan Data
+        // --- FITUR EDIT ---
+        window.editOrder = function(id) {
+            const order = orders.find(o => o.id === id);
+            if(!order) return;
+
+            editMode = true;
+            currentEditId = id;
+
+            // Masukkan data ke form
+            document.getElementById('orderDate').value = order.orderDate || new Date().toISOString().split('T')[0];
+            document.getElementById('orderId').value = order.orderId || '';
+            document.getElementById('customer').value = order.customer || '';
+            document.getElementById('product').value = order.product || '';
+            document.getElementById('price').value = order.price || '';
+
+            // Tampilkan foto jika ada
+            if(order.photo) {
+                window.currentImageData = order.photo;
+                document.getElementById('photoPreview').src = order.photo;
+                document.getElementById('photoPreview').classList.remove('hidden');
+                document.getElementById('removePhoto').classList.remove('hidden');
+                document.getElementById('photoHint').classList.add('hidden');
+            } else {
+                resetPhoto();
+            }
+
+            // Ubah UI Form agar user sadar lagi mode Edit
+            document.getElementById('formTitle').innerText = 'Edit Pesanan';
+            document.getElementById('formIcon').className = 'fas fa-pen text-green-400 mr-2';
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.classList.remove('from-tt-cyan', 'to-tt-pink');
+            submitBtn.classList.add('from-green-500', 'to-emerald-600');
+            
+            document.getElementById('submitText').innerText = 'Update';
+            document.getElementById('submitIcon').className = 'fas fa-save mr-2';
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+
+            // Scroll perlahan ke atas form
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        window.cancelEdit = function() {
+            editMode = false;
+            currentEditId = null;
+            
+            document.getElementById('orderForm').reset();
+            document.getElementById('orderDate').valueAsDate = new Date();
+            resetPhoto();
+
+            // Kembalikan UI Form ke normal
+            document.getElementById('formTitle').innerText = 'Input Pesanan';
+            document.getElementById('formIcon').className = 'fas fa-edit text-tt-cyan mr-2';
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.classList.remove('from-green-500', 'to-emerald-600');
+            submitBtn.classList.add('from-tt-cyan', 'to-tt-pink');
+            
+            document.getElementById('submitText').innerText = 'Simpan';
+            document.getElementById('submitIcon').className = 'fas fa-check mr-2';
+            document.getElementById('cancelEditBtn').classList.add('hidden');
+        }
+
+        // Simpan / Update Data
         document.getElementById('orderForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             if(!userId) return showToast("Sistem belum terhubung ke database.", 'error');
 
             const btn = document.getElementById('submitBtn');
-            btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Menyimpan...`;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> ${editMode ? 'Mengupdate...' : 'Menyimpan...'}`;
             btn.disabled = true;
 
-            const newOrder = {
+            const orderData = {
                 orderDate: document.getElementById('orderDate').value,
                 orderId: document.getElementById('orderId').value || '',
                 customer: document.getElementById('customer').value,
                 product: document.getElementById('product').value,
                 price: parseInt(document.getElementById('price').value),
-                photo: window.currentImageData,
-                timestamp: Date.now()
+                photo: window.currentImageData
             };
 
             try {
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), newOrder);
-                
-                // Reset form tapi pertahankan tanggal hari ini
-                e.target.reset();
-                document.getElementById('orderDate').valueAsDate = new Date(); 
-                resetPhoto();
+                if(editMode) {
+                    // Update data yang sudah ada
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'orders', currentEditId), orderData);
+                    showToast('Asik! Data berhasil diupdate 📝', 'success');
+                    cancelEdit(); // otomatis kembali ke form normal
+                } else {
+                    // Simpan data baru
+                    orderData.timestamp = Date.now();
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), orderData);
+                    e.target.reset();
+                    document.getElementById('orderDate').valueAsDate = new Date(); 
+                    resetPhoto();
+                    showToast('Asik! 1 Closingan Berhasil Dicatat 🔥', 'success');
+                }
                 document.getElementById('orderId').focus(); 
-                
-                showToast('Asik! 1 Closingan Berhasil Dicatat 🔥', 'success');
             } catch (err) {
                 console.error(err);
-                showToast("Gagal menyimpan. Pastikan rules Firebase disetup.", 'error');
+                showToast("Gagal memproses data. Cek koneksi.", 'error');
             } finally {
-                btn.innerHTML = `<i class="fas fa-check mr-2"></i> Simpan`;
+                btn.innerHTML = originalHTML;
                 btn.disabled = false;
             }
         });
@@ -393,6 +469,9 @@
         // Hapus Data
         window.deleteOrder = async function(id) {
             if(!userId) return;
+            // Jika yg dihapus adalah data yg sedang di-edit, batalkan mode edit
+            if(editMode && currentEditId === id) cancelEdit();
+
             try {
                 await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'orders', id));
                 showToast('Pesanan dihapus.', 'error');
@@ -417,13 +496,9 @@
             }
 
             listEl.innerHTML = orders.map(order => {
-                // Format Waktu Masuk
                 const timeStr = new Date(order.timestamp).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
-                
-                // Format Tanggal Order (Dari input kalender)
                 const dateObj = new Date(order.orderDate);
                 const dateStr = !isNaN(dateObj) ? dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Tanpa Tanggal';
-
                 const priceStr = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(order.price);
                 
                 const photoHTML = order.photo 
@@ -445,10 +520,15 @@
                         </div>
                     </div>
                     <div class="flex flex-col items-end shrink-0 ml-4">
-                        <span class="font-bold text-white text-base md:text-lg tracking-wide">${priceStr}</span>
-                        <button onclick="deleteOrder('${order.id}')" class="text-xs text-gray-500 mt-2 opacity-0 group-hover:opacity-100 transition-all hover:text-tt-pink">
-                            <i class="fas fa-trash"></i> Hapus
-                        </button>
+                        <span class="font-bold text-white text-base md:text-lg tracking-wide mb-1">${priceStr}</span>
+                        <div class="flex gap-3 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="editOrder('${order.id}')" class="text-xs text-tt-cyan hover:text-white transition-colors" title="Edit Pesanan">
+                                <i class="fas fa-pen"></i> Edit
+                            </button>
+                            <button onclick="deleteOrder('${order.id}')" class="text-xs text-red-500 hover:text-tt-pink transition-colors" title="Hapus Pesanan">
+                                <i class="fas fa-trash"></i> Hapus
+                            </button>
+                        </div>
                     </div>
                 </div>
                 `;
