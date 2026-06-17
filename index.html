@@ -97,6 +97,7 @@
         <div class="flex flex-col sm:flex-row items-center gap-3">
             <select id="periodFilter" class="bg-[#2a2a2a] border border-gray-700 text-white rounded-lg px-4 py-2 outline-none focus:border-tt-pink transition-colors text-sm w-full sm:w-auto cursor-pointer">
                 <option value="this_month" selected>Bulan Ini</option>
+                <option value="last_month">Bulan Lalu</option>
                 <option value="today">Hari Ini</option>
                 <option value="7days">7 Hari Terakhir</option>
                 <option value="all">Semua Waktu</option>
@@ -279,7 +280,7 @@
             
             // Update Label Statistik biar enak dibaca
             const labelMap = {
-                'this_month': 'Bulan Ini', 'today': 'Hari Ini', '7days': '7 Hari Terakhir', 'all': 'Semua Waktu', 'custom': 'Periode Custom'
+                'this_month': 'Bulan Ini', 'last_month': 'Bulan Lalu', 'today': 'Hari Ini', '7days': '7 Hari Terakhir', 'all': 'Semua Waktu', 'custom': 'Periode Custom'
             };
             document.getElementById('labelStatTotal').innerText = `Total Pesanan (${labelMap[currentFilter]})`;
             document.getElementById('labelStatOmzet').innerText = `Total Omzet (${labelMap[currentFilter]})`;
@@ -309,6 +310,9 @@
             const todayStr = getLocalYYYYMMDD(todayObj);
             const thisMonthStr = todayStr.substring(0, 7); // Format YYYY-MM
 
+            const lastMonthObj = new Date(todayObj.getFullYear(), todayObj.getMonth() - 1, 1);
+            const lastMonthStr = getLocalYYYYMMDD(lastMonthObj).substring(0, 7);
+
             return orders.filter(order => {
                 const dateStr = order.orderDate;
                 if (!dateStr) return true; // Skip filter jika data jadul gak punya tanggal
@@ -317,6 +321,8 @@
                     return dateStr === todayStr;
                 } else if (currentFilter === 'this_month') {
                     return dateStr.substring(0, 7) === thisMonthStr;
+                } else if (currentFilter === 'last_month') {
+                    return dateStr.substring(0, 7) === lastMonthStr;
                 } else if (currentFilter === '7days') {
                     const sevenDaysAgoObj = new Date();
                     sevenDaysAgoObj.setDate(sevenDaysAgoObj.getDate() - 6);
